@@ -513,8 +513,27 @@ static void mmu2_not_responding() {
     set_runout_valid(false);
 
     if (index != extruder) {
+        #if ENABLED(MMU_IR_UNLOAD_MOVE)
+		  if(FILAMENT_PRESENT()){
+			DEBUG_ECHOLNPGM("Unloading\n");
+			//filament_ramming(); //unloading from printer side
+			ENABLE_AXIS_E0();
+			while (FILAMENT_PRESENT()){ //if filament is still present, keep unloading
+			  current_position.e -=0.25;
+			  line_to_current_position(MMM_TO_MMS(120));
+			  planner.synchronize();
+			}
+			DISABLE_AXIS_E0(); //disable E stepper when unloading finished
+			command(MMU_CMD_U0); //unloading from mmu side but not printer
+			manage_response(true,true);
+		  }
+		  else { //filament was unloaded from idler, no additional movements needed 
+			DISABLE_AXIS_E0();
+		  }
+		#else // !MMU_IR_UNLOAD_MOVE - default
+			DISABLE_AXIS_E0();
+		#endif // MMU_IR_UNLOAD_MOVE
 
-      DISABLE_AXIS_E0();
       ui.status_printf_P(0, GET_TEXT(MSG_MMU2_LOADING_FILAMENT), int(index + 1));
 
       command(MMU_CMD_T0 + index);
@@ -932,6 +951,29 @@ void MMU2::filament_runout() {
       return false;
     }
 
+	#if ENABLED(MMU_IR_UNLOAD_MOVE)
+		// custom THIS IS FOR LOAD TO NOZZLE FUNCTION ONLY
+		if (index != extruder){
+		  
+		  if(FILAMENT_PRESENT()){
+			DEBUG_ECHOLNPGM("Unloading\n");        
+			ENABLE_AXIS_E0();
+			filament_ramming(); //unloading from printer side ! EXCLUSIVE FOR THIS FUNCTION
+			while (FILAMENT_PRESENT()){ // if filament is still present, keep unloading - WARNING I'm not sure 
+										// if this is a recommended coding style in marlin
+			  current_position.e -=1;
+			  line_to_current_position(MMM_TO_MMS(120));
+			  planner.synchronize();
+			}
+			DISABLE_AXIS_E0(); //disable E stepper when unloading finished
+			command(MMU_CMD_U0); //unloading from mmu side but not printer
+			manage_response(true,true);
+		  }
+		  else { //filament was unloaded from idler, no additional movements needed 
+			DISABLE_AXIS_E0(); 
+		  }
+		}
+	#endif // MMU_IR_UNLOAD_MOVE
     command(MMU_CMD_T0 + index);
     manage_response(true, true);
 
