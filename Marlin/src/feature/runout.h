@@ -287,6 +287,16 @@ class FilamentSensorBase {
       static inline void run() {
         const bool out = poll_runout_state(active_extruder);
         if (!out) filament_present(active_extruder);
+        #if ENABLED(FILAMENT_AUTOLOAD)
+          static bool was_out = false;
+          if (out != was_out) {
+            was_out = out;
+            if(!out) {// meaning if filament was inserted
+              queue.inject_P(PSTR("M701")); //load filament gcode
+            }
+          }
+        #endif //FILAMENT_AUTOLOAD
+
         #ifdef FILAMENT_RUNOUT_SENSOR_DEBUG
           static bool was_out = false;
           if (out != was_out) {

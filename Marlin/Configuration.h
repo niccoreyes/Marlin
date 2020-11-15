@@ -1223,6 +1223,10 @@
     // large enough to avoid false positives.)
     //#define FILAMENT_MOTION_SENSOR
   #endif
+  
+  // For users using a filament sensor near the extruder like the Prusa Extruder
+  // enable this feature to trigger a loading sequence
+  //#define FILAMENT_AUTOLOAD
 #endif
 
 //===========================================================================
