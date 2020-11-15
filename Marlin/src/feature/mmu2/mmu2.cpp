@@ -531,9 +531,9 @@ static void mmu2_not_responding() {
 		  else { //filament was unloaded from idler, no additional movements needed 
 			  DISABLE_AXIS_E0();
 		  }
-		#else // !MMU_IR_UNLOAD_MOVE - default
-			DISABLE_AXIS_E0();
-		#endif // MMU_IR_UNLOAD_MOVE
+		  #else // !MMU_IR_UNLOAD_MOVE - default
+			  DISABLE_AXIS_E0();
+		  #endif // MMU_IR_UNLOAD_MOVE
 
       ui.status_printf_P(0, GET_TEXT(MSG_MMU2_LOADING_FILAMENT), int(index + 1));
 
