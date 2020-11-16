@@ -3612,35 +3612,17 @@
     #define MMU2_CAN_LOAD_INCREMENT 0.2   // (mm) To reuse within MMU2 module
     #define MMU2_CAN_LOAD_INCREMENT_SEQUENCE \
       { -MMU2_CAN_LOAD_INCREMENT, MMU2_CAN_LOAD_FEEDRATE }
-
-	/**
-	 * The original prusa firmware has parameters to make sure there is no 
-	 * filament when switching tools, if so, keep unloading until no filament
-	 * is detected. I noticed this wasn't implemented in the mmu2.cpp of marlin 
-	 * since it assumes no filament was ever loaded if a different tool was used 
-	 * or load to nozzle was used. It relies on the filament ramming parameters 
-	 * which can be unreliable for flexible materials because it could sometimes 
-	 * keep it loaded in the gears. Uncomment to enable this feature
-	 */
-	//#define MMU_IR_UNLOAD_MOVE		  // Enable unloading with IR sensor
-  #else
-
+	
     /**
-     * MMU1 Extruder Sensor
-     *
-     * Support for a Průša (or other) IR Sensor to detect filament near the extruder
-     * and make loading more reliable. Suitable for an extruder equipped with a filament
-     * sensor less than 38mm from the gears.
-     *
-     * During loading the extruder will stop when the sensor is triggered, then do a last
-     * move up to the gears. If no filament is detected, the MMU2 can make some more attempts.
-     * If all attempts fail, a filament runout will be triggered.
+     * The original prusa firmware has parameters to make sure there is no 
+     * filament when switching tools, if so, keep unloading until no filament
+     * is detected. I noticed this wasn't implemented in the mmu2.cpp of marlin 
+     * since it assumes no filament was ever loaded if a different tool was used 
+     * or load to nozzle was used. It relies on the filament ramming parameters 
+     * which can be unreliable for flexible materials because it could sometimes 
+     * keep it loaded in the gears. Uncomment to enable this feature
      */
-    //#define MMU_EXTRUDER_SENSOR
-    #if ENABLED(MMU_EXTRUDER_SENSOR)
-      #define MMU_LOADING_ATTEMPTS_NR 5 // max. number of attempts to load filament if first load fail
-    #endif
-
+    //#define MMU_IR_UNLOAD_MOVE		  // Enable unloading with IR sensor
   #endif
 
   //#define MMU2_DEBUG  // Write debug info to serial output
