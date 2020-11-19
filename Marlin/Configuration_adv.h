@@ -3612,17 +3612,9 @@
     #define MMU2_CAN_LOAD_INCREMENT 0.2   // (mm) To reuse within MMU2 module
     #define MMU2_CAN_LOAD_INCREMENT_SEQUENCE \
       { -MMU2_CAN_LOAD_INCREMENT, MMU2_CAN_LOAD_FEEDRATE }
-	
-    /**
-     * The original prusa firmware has parameters to make sure there is no 
-     * filament when switching tools, if so, keep unloading until no filament
-     * is detected. I noticed this wasn't implemented in the mmu2.cpp of marlin 
-     * since it assumes no filament was ever loaded if a different tool was used 
-     * or load to nozzle was used. It relies on the filament ramming parameters 
-     * which can be unreliable for flexible materials because it could sometimes 
-     * keep it loaded in the gears. Uncomment to enable this feature
-     */
-    //#define MMU_IR_UNLOAD_MOVE		  // Enable unloading with IR sensor
+
+    // Continue unloading if sensor detects filament after the initial unload move
+    //#define MMU_IR_UNLOAD_MOVE
   #endif
 
   //#define MMU2_DEBUG  // Write debug info to serial output
