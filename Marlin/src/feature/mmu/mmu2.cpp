@@ -511,8 +511,7 @@ static void mmu2_not_responding() {
     if (index != extruder)
     {
       #if ENABLED(MMU_IR_UNLOAD_MOVE)
-        if (FILAMENT_PRESENT())
-        {
+        if (FILAMENT_PRESENT()) {
           DEBUG_ECHOLNPGM("Unloading\n");
           //filament_ramming(); //unloading from printer side
           ENABLE_AXIS_E0();
@@ -527,8 +526,7 @@ static void mmu2_not_responding() {
           // ^commented out because command(MMU_CMD_T0 + index); manages the current loaded tool
           manage_response(true, true);
         }
-        else
-        { //filament was unloaded from idler, no additional movements needed
+        else { //filament was unloaded from idler, no additional movements needed
           DISABLE_AXIS_E0();
         }
       #else  // !MMU_IR_UNLOAD_MOVE - default
@@ -964,12 +962,12 @@ bool MMU2::load_filament_to_nozzle(const uint8_t index) {
 
   #if ENABLED(MMU_IR_UNLOAD_MOVE)
     // custom THIS IS FOR LOAD TO NOZZLE FUNCTION ONLY
-    if (index != extruder){
-      if(FILAMENT_PRESENT()){
+    if (index != extruder) {
+      if(FILAMENT_PRESENT()) {
         DEBUG_ECHOLNPGM("Unloading\n");
         ENABLE_AXIS_E0();
         filament_ramming(); //unloading from printer side ! EXCLUSIVE FOR THIS FUNCTION
-        while (FILAMENT_PRESENT()){ // if filament is still present, keep unloading - WARNING I'm not sure
+        while (FILAMENT_PRESENT()) { // if filament is still present, keep unloading - WARNING I'm not sure
           // if this is a recommended coding style in marlin
           current_position.e -=1; //this is a guessed value
           line_to_current_position(MMM_TO_MMS(120));
