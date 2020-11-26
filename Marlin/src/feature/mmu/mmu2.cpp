@@ -119,6 +119,12 @@ static constexpr E_Step
   #endif
 ;
 
+inline void unscaled_mmu2_e_move(const float &dist, const feedRate_t fr_mm_s, const bool sync=true) {
+  current_position.e += dist / planner.e_factor[active_extruder];
+  line_to_current_position(fr_mm_s);
+  if (sync) planner.synchronize();
+}
+
 MMU2::MMU2() {
   rx_buffer[0] = '\0';
 }
@@ -508,21 +514,16 @@ static void mmu2_not_responding() {
 
     set_runout_valid(false);
 
-    if (index != extruder)
-    {
+    if (index != extruder) {
       #if ENABLED(MMU_IR_UNLOAD_MOVE)
         if (FILAMENT_PRESENT()) {
           DEBUG_ECHOLNPGM("Unloading\n");
           ENABLE_AXIS_E0();
-          while (FILAMENT_PRESENT())
-          {                             //if filament is still present, keep unloading
-            current_position.e -= 0.25; //this is a guessed value, adjust to your preference
-            line_to_current_position(MMM_TO_MMS(120));
-            planner.synchronize();
-          }
+          while (FILAMENT_PRESENT())                      // Filament present? Keep unloading.
+            unscaled_mmu2_e_move(-0.25, MMM_TO_MMS(120)); // 0.25mm is a guessed value. Adjust to preference.
         }
-      #endif // MMU_IR_UNLOAD_MOVE
-      
+      #endif
+
       DISABLE_AXIS_E0();
 
       ui.status_printf_P(0, GET_TEXT(MSG_MMU2_LOADING_FILAMENT), int(index + 1));
@@ -855,19 +856,14 @@ void MMU2::manage_response(const bool move_axes, const bool turn_off_nozzle) {
         while (!thermalManager.wait_for_hotend(active_extruder, false)) safe_delay(1000);
       }
 
-      if (move_axes && all_axes_homed()) {
-        LCD_MESSAGEPGM(MSG_MMU2_RESUMING);
-        BUZZ(198, 404); BUZZ(4, 0); BUZZ(198, 404);
+      BUZZ(198, 404); BUZZ(4, 0); BUZZ(198, 404);
+      LCD_MESSAGEPGM(MSG_MMU2_RESUMING);
 
+      if (move_axes && all_axes_homed()) {
         // Move XY to starting position, then Z
         do_blocking_move_to_xy(resume_position, feedRate_t(NOZZLE_PARK_XY_FEEDRATE));
-
         // Move Z_AXIS to saved position
         do_blocking_move_to_z(resume_position.z, feedRate_t(NOZZLE_PARK_Z_FEEDRATE));
-      }
-      else {
-        BUZZ(198, 404); BUZZ(4, 0); BUZZ(198, 404);
-        LCD_MESSAGEPGM(MSG_MMU2_RESUMING);
       }
     }
   }
@@ -898,10 +894,8 @@ void MMU2::filament_runout() {
       }
       // Slowly spin the extruder during C0
       else {
-        while (planner.movesplanned() < 3) {
-          current_position.e += 0.25;
-          line_to_current_position(MMM_TO_MMS(120));
-        }
+        while (planner.movesplanned() < 3)
+          unscaled_mmu2_e_move(0.25, MMM_TO_MMS(120), false);
       }
     }
     mmu2s_triggered = present;
@@ -943,7 +937,6 @@ void MMU2::load_filament(const uint8_t index) {
  * Switch material and load to nozzle
  */
 bool MMU2::load_filament_to_nozzle(const uint8_t index) {
-
   if (!enabled) return false;
 
   if (thermalManager.tooColdToExtrude(active_extruder)) {
@@ -952,20 +945,13 @@ bool MMU2::load_filament_to_nozzle(const uint8_t index) {
     return false;
   }
 
-  #if ENABLED(MMU_IR_UNLOAD_MOVE)
-    if (index != extruder) {
-      if(FILAMENT_PRESENT()) {
-        DEBUG_ECHOLNPGM("Unloading\n");
-        ENABLE_AXIS_E0();
-        filament_ramming(); //unloading instructions from printer side when operating LCD
-        while (FILAMENT_PRESENT()) { // if filament is still present, keep unloading - WARNING this is a loop
-          current_position.e -=0.25; //this is a guessed value
-          line_to_current_position(MMM_TO_MMS(120));
-          planner.synchronize();
-        }
-      }
-    }
-  #endif // MMU_IR_UNLOAD_MOVE
+  if (TERN0(MMU_IR_UNLOAD_MOVE, index != extruder) && FILAMENT_PRESENT()) {
+    DEBUG_ECHOLNPGM("Unloading\n");
+    ENABLE_AXIS_E0();
+    filament_ramming();                             // Unloading instructions from printer side when operating LCD
+    while (FILAMENT_PRESENT())                      // Filament present? Keep unloading.
+      unscaled_mmu2_e_move(-0.25, MMM_TO_MMS(120)); // 0.25mm is a guessed value. Adjust to preference.
+  }
 
   DISABLE_AXIS_E0();
   command(MMU_CMD_T0 + index);
@@ -1007,9 +993,7 @@ bool MMU2::eject_filament(const uint8_t index, const bool recover) {
   LCD_MESSAGEPGM(MSG_MMU2_EJECTING_FILAMENT);
 
   ENABLE_AXIS_E0();
-  current_position.e -= MMU2_FILAMENTCHANGE_EJECT_FEED;
-  line_to_current_position(MMM_TO_MMS(2500));
-  planner.synchronize();
+  unscaled_mmu2_e_move(-(MMU2_FILAMENTCHANGE_EJECT_FEED), MMM_TO_MMS(2500));
   command(MMU_CMD_E0 + index);
   manage_response(false, false);
 
@@ -1076,7 +1060,6 @@ void MMU2::filament_ramming() {
 }
 
 void MMU2::execute_extruder_sequence(const E_Step * sequence, int steps) {
-
   planner.synchronize();
   ENABLE_AXIS_E0();
 
@@ -1084,15 +1067,9 @@ void MMU2::execute_extruder_sequence(const E_Step * sequence, int steps) {
 
   LOOP_L_N(i, steps) {
     const float es = pgm_read_float(&(step->extrude));
-    const feedRate_t fr_mm_m = pgm_read_float(&(step->feedRate));
-
     DEBUG_ECHO_START();
     DEBUG_ECHOLNPAIR("E step ", es, "/", fr_mm_m);
-
-    current_position.e += es;
-    line_to_current_position(MMM_TO_MMS(fr_mm_m));
-    planner.synchronize();
-
+    unscaled_mmu2_e_move(es, MMM_TO_MMS(pgm_read_float(&step->feedRate)));
     step++;
   }
 
