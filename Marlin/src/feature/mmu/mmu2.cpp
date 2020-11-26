@@ -515,14 +515,12 @@ static void mmu2_not_responding() {
     set_runout_valid(false);
 
     if (index != extruder) {
-      #if ENABLED(MMU_IR_UNLOAD_MOVE)
-        if (FILAMENT_PRESENT()) {
-          DEBUG_ECHOLNPGM("Unloading\n");
-          ENABLE_AXIS_E0();
-          while (FILAMENT_PRESENT())                      // Filament present? Keep unloading.
-            unscaled_mmu2_e_move(-0.25, MMM_TO_MMS(120)); // 0.25mm is a guessed value. Adjust to preference.
-        }
-      #endif
+      if (ENABLED(MMU_IR_UNLOAD_MOVE) && FILAMENT_PRESENT()) {
+        DEBUG_ECHOLNPGM("Unloading\n");
+        ENABLE_AXIS_E0();
+        while (FILAMENT_PRESENT())                      // Filament present? Keep unloading.
+          unscaled_mmu2_e_move(-0.25, MMM_TO_MMS(120)); // 0.25mm is a guessed value. Adjust to preference.
+      }
 
       DISABLE_AXIS_E0();
 
@@ -544,6 +542,8 @@ static void mmu2_not_responding() {
     set_runout_valid(true);
   }
 
+  inline void beep_bad_cmd() { BUZZ(400, 40); }
+
   /**
    * Handle special T?/Tx/Tc commands
    *
@@ -563,7 +563,7 @@ static void mmu2_not_responding() {
             while (!thermalManager.wait_for_hotend(active_extruder, false)) safe_delay(100);
             load_filament_to_nozzle(index);
           #else
-            BUZZ(400, 40);
+            beep_bad_cmd()
           #endif
         } break;
 
@@ -582,7 +582,7 @@ static void mmu2_not_responding() {
               active_extruder = 0;
             }
           #else
-            BUZZ(400, 40);
+            beep_bad_cmd()
           #endif
         } break;
 
@@ -652,7 +652,7 @@ static void mmu2_not_responding() {
           while (!thermalManager.wait_for_hotend(active_extruder, false)) safe_delay(100);
           load_filament_to_nozzle(index);
         #else
-          BUZZ(400, 40);
+          beep_bad_cmd()
         #endif
       } break;
 
@@ -672,7 +672,7 @@ static void mmu2_not_responding() {
           extruder = index;
           active_extruder = 0;
         #else
-          BUZZ(400, 40);
+          beep_bad_cmd()
         #endif
       } break;
 
@@ -747,7 +747,7 @@ static void mmu2_not_responding() {
           while (!thermalManager.wait_for_hotend(active_extruder, false)) safe_delay(100);
           load_filament_to_nozzle(index);
         #else
-          BUZZ(400, 40);
+          beep_bad_cmd()
         #endif
       } break;
 
@@ -766,7 +766,7 @@ static void mmu2_not_responding() {
           extruder = index;
           active_extruder = 0;
         #else
-          BUZZ(400, 40);
+          beep_bad_cmd()
         #endif
       } break;
 
@@ -852,7 +852,6 @@ void MMU2::manage_response(const bool move_axes, const bool turn_off_nozzle) {
         thermalManager.setTargetHotend(resume_hotend_temp, active_extruder);
         LCD_MESSAGEPGM(MSG_HEATING);
         BUZZ(200, 40);
-
         while (!thermalManager.wait_for_hotend(active_extruder, false)) safe_delay(1000);
       }
 
@@ -925,12 +924,14 @@ void MMU2::filament_runout() {
 
 #endif
 
+inline void beep_alert() { BUZZ(200, 404); }
+
 // Load filament into MMU2
 void MMU2::load_filament(const uint8_t index) {
   if (!enabled) return;
   command(MMU_CMD_L0 + index);
   manage_response(false, false);
-  BUZZ(200, 404);
+  beep_alert();
 }
 
 /**
@@ -940,7 +941,7 @@ bool MMU2::load_filament_to_nozzle(const uint8_t index) {
   if (!enabled) return false;
 
   if (thermalManager.tooColdToExtrude(active_extruder)) {
-    BUZZ(200, 404);
+    beep_alert();
     LCD_ALERTMESSAGEPGM(MSG_HOTEND_TOO_COLD);
     return false;
   }
@@ -963,7 +964,7 @@ bool MMU2::load_filament_to_nozzle(const uint8_t index) {
     extruder = index;
     active_extruder = 0;
     load_to_nozzle();
-    BUZZ(200, 404);
+    beep_alert();
   }
   return success;
 }
@@ -985,7 +986,7 @@ bool MMU2::eject_filament(const uint8_t index, const bool recover) {
   if (!enabled) return false;
 
   if (thermalManager.tooColdToExtrude(active_extruder)) {
-    BUZZ(200, 404);
+    beep_alert();
     LCD_ALERTMESSAGEPGM(MSG_HOTEND_TOO_COLD);
     return false;
   }
@@ -999,13 +1000,11 @@ bool MMU2::eject_filament(const uint8_t index, const bool recover) {
 
   if (recover)  {
     LCD_MESSAGEPGM(MSG_MMU2_EJECT_RECOVER);
-    BUZZ(200, 404);
+    beep_alert();
     TERN_(HOST_PROMPT_SUPPORT, host_prompt_do(PROMPT_USER_CONTINUE, PSTR("MMU2 Eject Recover"), CONTINUE_STR));
     TERN_(EXTENSIBLE_UI, ExtUI::onUserConfirmRequired_P(PSTR("MMU2 Eject Recover")));
     wait_for_user_response();
-    BUZZ(200, 404);
-    BUZZ(200, 404);
-
+    beep_alert();
     command(MMU_CMD_R0);
     manage_response(false, false);
   }
@@ -1017,7 +1016,7 @@ bool MMU2::eject_filament(const uint8_t index, const bool recover) {
 
   set_runout_valid(false);
 
-  BUZZ(200, 404);
+  beep_alert();
 
   DISABLE_AXIS_E0();
 
@@ -1032,7 +1031,7 @@ bool MMU2::unload() {
   if (!enabled) return false;
 
   if (thermalManager.tooColdToExtrude(active_extruder)) {
-    BUZZ(200, 404);
+    beep_alert();
     LCD_ALERTMESSAGEPGM(MSG_HOTEND_TOO_COLD);
     return false;
   }
@@ -1042,7 +1041,7 @@ bool MMU2::unload() {
   command(MMU_CMD_U0);
   manage_response(false, true);
 
-  BUZZ(200, 404);
+  beep_alert();
 
   // no active tool
   extruder = MMU2_NO_TOOL;
