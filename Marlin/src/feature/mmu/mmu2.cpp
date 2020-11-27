@@ -1066,9 +1066,11 @@ void MMU2::execute_extruder_sequence(const E_Step * sequence, int steps) {
 
   LOOP_L_N(i, steps) {
     const float es = pgm_read_float(&(step->extrude));
+    const float fr_mm_m = pgm_read_float(&(step->feedRate));
+
     DEBUG_ECHO_START();
     DEBUG_ECHOLNPAIR("E step ", es, "/", fr_mm_m);
-    unscaled_mmu2_e_move(es, MMM_TO_MMS(pgm_read_float(&step->feedRate)));
+    unscaled_mmu2_e_move(es, MMM_TO_MMS(fr_mm_m));
     step++;
   }
 
