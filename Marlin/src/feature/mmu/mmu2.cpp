@@ -493,7 +493,6 @@ static void mmu2_not_responding() {
     if (index != extruder) {
       if (ENABLED(MMU_IR_UNLOAD_MOVE) && FILAMENT_PRESENT()) {
         DEBUG_ECHOLNPGM("Unloading\n");
-        ENABLE_AXIS_E0();
         while (FILAMENT_PRESENT())                      // Filament present? Keep unloading.
           unscaled_mmu2_e_move(-0.25, MMM_TO_MMS(120)); // 0.25mm is a guessed value. Adjust to preference.
       }
@@ -922,7 +921,6 @@ bool MMU2::load_filament_to_nozzle(const uint8_t index) {
 
   if (TERN0(MMU_IR_UNLOAD_MOVE, index != extruder) && FILAMENT_PRESENT()) {
     DEBUG_ECHOLNPGM("Unloading\n");
-    ENABLE_AXIS_E0();
     filament_ramming();                             // Unloading instructions from printer side when operating LCD
     while (FILAMENT_PRESENT())                      // Filament present? Keep unloading.
       unscaled_mmu2_e_move(-0.25, MMM_TO_MMS(120)); // 0.25mm is a guessed value. Adjust to preference.
@@ -966,7 +964,6 @@ bool MMU2::eject_filament(const uint8_t index, const bool recover) {
 
   LCD_MESSAGEPGM(MSG_MMU2_EJECTING_FILAMENT);
 
-  ENABLE_AXIS_E0();
   unscaled_mmu2_e_move(-(MMU2_FILAMENTCHANGE_EJECT_FEED), MMM_TO_MMS(2500));
   command(MMU_CMD_E0 + index);
   manage_response(false, false);
@@ -1027,7 +1024,6 @@ bool MMU2::unload() {
 
 void MMU2::execute_extruder_sequence(const E_Step * sequence, int steps) {
   planner.synchronize();
-  ENABLE_AXIS_E0();
 
   const E_Step* step = sequence;
 
