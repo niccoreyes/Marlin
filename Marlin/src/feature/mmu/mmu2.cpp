@@ -195,17 +195,16 @@ void MMU2::mmu_loop() {
       break;
 
     #if ENABLED(MMU2_MODE_12V)
-    case -5:
-      // response to M1
-      if (rx_ok()) {
-        DEBUG_ECHOLNPGM("MMU => ok");
+      case -5:
+        // response to M1
+        if (rx_ok()) {
+          DEBUG_ECHOLNPGM("MMU => ok");
+          DEBUG_ECHOLNPGM("MMU <= 'P0'");
 
-        DEBUG_ECHOLNPGM("MMU <= 'P0'");
-
-        MMU2_COMMAND("P0");   // Read FINDA
-        state = -4;
-      }
-      break;
+          MMU2_COMMAND("P0");   // Read FINDA
+          state = -4;
+        }
+        break;
     #endif
 
     case -4:
