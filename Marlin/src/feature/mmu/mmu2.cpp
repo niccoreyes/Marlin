@@ -83,7 +83,7 @@ uint8_t MMU2::cmd, MMU2::cmd_arg, MMU2::last_cmd, MMU2::extruder;
 int8_t MMU2::state = 0;
 volatile int8_t MMU2::finda = 1;
 volatile bool MMU2::finda_runout_valid;
-int16_t MMU2::version = -1, MMU2::buildnr = -1;
+short unsigned int MMU2::version = -1, MMU2::buildnr = -1;
 millis_t MMU2::prev_request, MMU2::prev_P0_request;
 char MMU2::rx_buffer[MMU_RX_SIZE], MMU2::tx_buffer[MMU_TX_SIZE];
 
@@ -136,6 +136,8 @@ uint8_t MMU2::get_current_tool() { return extruder == MMU2_NO_TOOL ? -1 : extrud
 
 #if EITHER(HAS_PRUSA_MMU2S, MMU_EXTRUDER_SENSOR)
   #define FILAMENT_PRESENT() (READ(FIL_RUNOUT1_PIN) != FIL_RUNOUT1_STATE)
+#else
+  #define FILAMENT_PRESENT() true
 #endif
 
 void MMU2::mmu_loop() {
@@ -530,7 +532,7 @@ inline void beep_bad_cmd() { BUZZ(400, 40); }
             while (!thermalManager.wait_for_hotend(active_extruder, false)) safe_delay(100);
             load_to_nozzle(index);
           #else
-            beep_bad_cmd()
+            beep_bad_cmd();
           #endif
         } break;
 
@@ -549,7 +551,7 @@ inline void beep_bad_cmd() { BUZZ(400, 40); }
               active_extruder = 0;
             }
           #else
-            beep_bad_cmd()
+            beep_bad_cmd();
           #endif
         } break;
 
@@ -618,7 +620,7 @@ inline void beep_bad_cmd() { BUZZ(400, 40); }
           while (!thermalManager.wait_for_hotend(active_extruder, false)) safe_delay(100);
           load_to_nozzle(index);
         #else
-          beep_bad_cmd()
+          beep_bad_cmd();
         #endif
       } break;
 
@@ -638,7 +640,7 @@ inline void beep_bad_cmd() { BUZZ(400, 40); }
           extruder = index;
           active_extruder = 0;
         #else
-          beep_bad_cmd()
+          beep_bad_cmd();
         #endif
       } break;
 
@@ -712,7 +714,7 @@ inline void beep_bad_cmd() { BUZZ(400, 40); }
           while (!thermalManager.wait_for_hotend(active_extruder, false)) safe_delay(100);
           load_to_nozzle(index);
         #else
-          beep_bad_cmd()
+          beep_bad_cmd();
         #endif
       } break;
 
@@ -731,7 +733,7 @@ inline void beep_bad_cmd() { BUZZ(400, 40); }
           extruder = index;
           active_extruder = 0;
         #else
-          beep_bad_cmd()
+          beep_bad_cmd();
         #endif
       } break;
 
