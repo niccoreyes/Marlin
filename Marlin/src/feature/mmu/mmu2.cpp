@@ -97,7 +97,7 @@ void ramming_sequence() {
   execute_extruder_sequence(sequence, COUNT(sequence));
 }
 
-void load_to_nozzle() {
+void load_to_nozzle_sequence() {
   static const E_Step sequence[] PROGMEM = { MMU2_LOAD_TO_NOZZLE_SEQUENCE };
   execute_extruder_sequence(sequence, COUNT(sequence));
 }
@@ -563,7 +563,7 @@ static void mmu2_not_responding() {
 
         case 'c': {
           while (!thermalManager.wait_for_hotend(active_extruder, false)) safe_delay(100);
-          load_to_nozzle();
+          load_to_nozzle_sequence();
         } break;
       }
 
@@ -653,7 +653,7 @@ static void mmu2_not_responding() {
       case 'c': {
         DEBUG_ECHOLNPGM("case c\n");
         while (!thermalManager.wait_for_hotend(active_extruder, false)) safe_delay(100);
-        load_to_nozzle();
+        load_to_nozzle_sequence();
       } break;
     }
 
@@ -746,7 +746,7 @@ static void mmu2_not_responding() {
       case 'c': {
         DEBUG_ECHOLNPGM("case c\n");
         while (!thermalManager.wait_for_hotend(active_extruder, false)) safe_delay(100);
-        load_to_nozzle();
+        load_to_nozzle_sequence();
       } break;
     }
 
@@ -939,7 +939,7 @@ bool MMU2::load_filament_to_nozzle(const uint8_t index) {
     mmu_loop();
     extruder = index;
     active_extruder = 0;
-    load_to_nozzle();
+    load_to_nozzle_sequence();
     beep_alert();
   }
   return success;
