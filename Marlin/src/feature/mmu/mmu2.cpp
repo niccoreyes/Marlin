@@ -92,14 +92,15 @@ struct E_Step {
   feedRate_t feedRate;  //!< feed rate in mm/s
 };
 
-static constexpr E_Step
-    ramming_sequence[] PROGMEM = { MMU2_RAMMING_SEQUENCE }
-  , load_to_nozzle_sequence[] PROGMEM = { MMU2_LOAD_TO_NOZZLE_SEQUENCE }
-  #if HAS_PRUSA_MMU2S
-    , can_load_sequence[] PROGMEM = { MMU2_CAN_LOAD_SEQUENCE }
-    , can_load_increment_sequence[] PROGMEM = { MMU2_CAN_LOAD_INCREMENT_SEQUENCE }
-  #endif
-;
+void ramming_sequence() {
+  static const E_Step sequence[] PROGMEM = { MMU2_RAMMING_SEQUENCE };
+  execute_extruder_sequence(sequence, COUNT(sequence));
+}
+
+void load_to_nozzle() {
+  static const E_Step sequence[] PROGMEM = { MMU2_LOAD_TO_NOZZLE_SEQUENCE };
+  execute_extruder_sequence(sequence, COUNT(sequence));
+}
 
 inline void unscaled_mmu2_e_move(const float &dist, const feedRate_t fr_mm_s, const bool sync=true) {
   current_position.e += dist / planner.e_factor[active_extruder];
@@ -652,7 +653,7 @@ static void mmu2_not_responding() {
       case 'c': {
         DEBUG_ECHOLNPGM("case c\n");
         while (!thermalManager.wait_for_hotend(active_extruder, false)) safe_delay(100);
-        execute_extruder_sequence((const E_Step *)load_to_nozzle_sequence, COUNT(load_to_nozzle_sequence));
+        load_to_nozzle();
       } break;
     }
 
@@ -745,7 +746,7 @@ static void mmu2_not_responding() {
       case 'c': {
         DEBUG_ECHOLNPGM("case c\n");
         while (!thermalManager.wait_for_hotend(active_extruder, false)) safe_delay(100);
-        execute_extruder_sequence((const E_Step *)load_to_nozzle_sequence, COUNT(load_to_nozzle_sequence));
+        load_to_nozzle();
       } break;
     }
 
@@ -873,13 +874,16 @@ void MMU2::filament_runout() {
   }
 
   bool MMU2::can_load() {
-    execute_extruder_sequence((const E_Step *)can_load_sequence, COUNT(can_load_sequence));
+    static const E_Step can_load_sequence[] PROGMEM = { MMU2_CAN_LOAD_SEQUENCE },
+                        can_load_increment_sequence[] PROGMEM = { MMU2_CAN_LOAD_INCREMENT_SEQUENCE };
+
+    execute_extruder_sequence(can_load_sequence, COUNT(can_load_sequence));
 
     int filament_detected_count = 0;
     const int steps = (MMU2_CAN_LOAD_RETRACT) / (MMU2_CAN_LOAD_INCREMENT);
     DEBUG_ECHOLNPGM("MMU can_load:");
     LOOP_L_N(i, steps) {
-      execute_extruder_sequence((const E_Step *)can_load_increment_sequence, COUNT(can_load_increment_sequence));
+      execute_extruder_sequence(can_load_increment_sequence, COUNT(can_load_increment_sequence));
       check_filament(); // Don't trust the idle function
       DEBUG_CHAR(mmu2s_triggered ? 'O' : 'o');
       if (mmu2s_triggered) ++filament_detected_count;
@@ -921,7 +925,7 @@ bool MMU2::load_filament_to_nozzle(const uint8_t index) {
 
   if (TERN0(MMU_IR_UNLOAD_MOVE, index != extruder) && FILAMENT_PRESENT()) {
     DEBUG_ECHOLNPGM("Unloading\n");
-    filament_ramming();                             // Unloading instructions from printer side when operating LCD
+    ramming_sequence();                             // Unloading instructions from printer side when operating LCD
     while (FILAMENT_PRESENT())                      // Filament present? Keep unloading.
       unscaled_mmu2_e_move(-0.25, MMM_TO_MMS(120)); // 0.25mm is a guessed value. Adjust to preference.
   }
@@ -939,17 +943,6 @@ bool MMU2::load_filament_to_nozzle(const uint8_t index) {
     beep_alert();
   }
   return success;
-}
-
-/**
- * Load filament to nozzle of multimaterial printer
- *
- * This function is used only after T? (user select filament) and M600 (change filament).
- * It is not used after T0 .. T4 command (select filament), in such case, gcode is responsible for loading
- * filament to nozzle.
- */
-void MMU2::load_to_nozzle() {
-  execute_extruder_sequence((const E_Step *)load_to_nozzle_sequence, COUNT(load_to_nozzle_sequence));
 }
 
 bool MMU2::eject_filament(const uint8_t index, const bool recover) {
@@ -1007,7 +1000,7 @@ bool MMU2::unload() {
   }
 
   // Unload sequence to optimize shape of the tip of the unloaded filament
-  execute_extruder_sequence((const E_Step *)ramming_sequence, sizeof(ramming_sequence) / sizeof(E_Step));
+  ramming_sequence();
 
   command(MMU_CMD_U0);
   manage_response(false, true);
