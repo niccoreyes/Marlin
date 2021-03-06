@@ -70,6 +70,8 @@ private:
   static void manage_response(const bool move_axes, const bool turn_off_nozzle);
 
   static void execute_extruder_sequence(const E_Step * sequence, int steps);
+  static void ramming_sequence();
+  static void load_to_nozzle_sequence();
 
   static void filament_runout();
 

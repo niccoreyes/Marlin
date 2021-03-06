@@ -92,16 +92,6 @@ struct E_Step {
   feedRate_t feedRate;  //!< feed rate in mm/s
 };
 
-void ramming_sequence() {
-  static const E_Step sequence[] PROGMEM = { MMU2_RAMMING_SEQUENCE };
-  execute_extruder_sequence(sequence, COUNT(sequence));
-}
-
-void load_to_nozzle_sequence() {
-  static const E_Step sequence[] PROGMEM = { MMU2_LOAD_TO_NOZZLE_SEQUENCE };
-  execute_extruder_sequence(sequence, COUNT(sequence));
-}
-
 inline void unscaled_mmu2_e_move(const float &dist, const feedRate_t fr_mm_s, const bool sync=true) {
   current_position.e += dist / planner.e_factor[active_extruder];
   line_to_current_position(fr_mm_s);
@@ -464,6 +454,8 @@ static void mmu2_not_responding() {
   BUZZ(100, 659);
 }
 
+inline void beep_bad_cmd() { BUZZ(400, 40); }
+
 #if HAS_PRUSA_MMU2S
 
   /**
@@ -519,8 +511,6 @@ static void mmu2_not_responding() {
 
     set_runout_valid(true);
   }
-
-  inline void beep_bad_cmd() { BUZZ(400, 40); }
 
   /**
    * Handle special T?/Tx/Tc commands
@@ -1016,6 +1006,16 @@ bool MMU2::unload() {
   set_runout_valid(false);
 
   return true;
+}
+
+void MMU2::ramming_sequence() {
+  static const E_Step sequence[] PROGMEM = { MMU2_RAMMING_SEQUENCE };
+  execute_extruder_sequence(sequence, COUNT(sequence));
+}
+
+void MMU2::load_to_nozzle_sequence() {
+  static const E_Step sequence[] PROGMEM = { MMU2_LOAD_TO_NOZZLE_SEQUENCE };
+  execute_extruder_sequence(sequence, COUNT(sequence));
 }
 
 void MMU2::execute_extruder_sequence(const E_Step * sequence, int steps) {
