@@ -142,9 +142,7 @@ void MMU2::reset() {
   #endif
 }
 
-uint8_t MMU2::get_current_tool() {
-  return extruder == MMU2_NO_TOOL ? -1 : extruder;
-}
+uint8_t MMU2::get_current_tool() { return extruder == MMU2_NO_TOOL ? -1 : extruder; }
 
 #if EITHER(HAS_PRUSA_MMU2S, MMU_EXTRUDER_SENSOR)
   #define FILAMENT_PRESENT() (READ(FIL_RUNOUT1_PIN) != FIL_RUNOUT1_STATE)
@@ -468,6 +466,11 @@ static void mmu2_not_responding() {
 
 #if HAS_PRUSA_MMU2S
 
+  /**
+   * Load filament until the sensor at the gears is triggered
+   * and give up after a number of attempts set with MMU2_C0_RETRY.
+   * Each try has a timeout before returning a fail state.
+   */
   bool MMU2::load_to_gears() {
     command(MMU_CMD_C0);
     manage_response(true, true);
@@ -536,7 +539,7 @@ static void mmu2_not_responding() {
           #if ENABLED(MMU2_MENUS)
             const uint8_t index = mmu2_choose_filament();
             while (!thermalManager.wait_for_hotend(active_extruder, false)) safe_delay(100);
-            load_filament_to_nozzle(index);
+            load_to_nozzle(index);
           #else
             beep_bad_cmd()
           #endif
@@ -624,7 +627,7 @@ static void mmu2_not_responding() {
         #if ENABLED(MMU2_MENUS)
           uint8_t index = mmu2_choose_filament();
           while (!thermalManager.wait_for_hotend(active_extruder, false)) safe_delay(100);
-          load_filament_to_nozzle(index);
+          load_to_nozzle(index);
         #else
           beep_bad_cmd()
         #endif
@@ -718,7 +721,7 @@ static void mmu2_not_responding() {
         #if ENABLED(MMU2_MENUS)
           uint8_t index = mmu2_choose_filament();
           while (!thermalManager.wait_for_hotend(active_extruder, false)) safe_delay(100);
-          load_filament_to_nozzle(index);
+          load_to_nozzle(index);
         #else
           beep_bad_cmd()
         #endif
@@ -819,7 +822,7 @@ void MMU2::manage_response(const bool move_axes, const bool turn_off_nozzle) {
       }
     }
     else if (mmu_print_saved) {
-      SERIAL_ECHOLNPGM("MMU starts responding\n");
+      SERIAL_ECHOLNPGM("\nMMU starts responding");
 
       if (turn_off_nozzle && resume_hotend_temp) {
         thermalManager.setTargetHotend(resume_hotend_temp, active_extruder);
@@ -903,7 +906,7 @@ void MMU2::filament_runout() {
 inline void beep_alert() { BUZZ(200, 404); }
 
 // Load filament into MMU2
-void MMU2::load_filament(const uint8_t index) {
+void MMU2::load_to_feeder(const uint8_t index) {
   if (!enabled) return;
 
   command(MMU_CMD_L0 + index);
@@ -914,7 +917,7 @@ void MMU2::load_filament(const uint8_t index) {
 /**
  * Switch material and load to nozzle
  */
-bool MMU2::load_filament_to_nozzle(const uint8_t index) {
+bool MMU2::load_to_nozzle(const uint8_t index) {
   if (!enabled) return false;
 
   if (thermalManager.tooColdToExtrude(active_extruder)) {

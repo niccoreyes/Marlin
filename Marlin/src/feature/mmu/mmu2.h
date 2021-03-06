@@ -50,9 +50,8 @@ public:
   static void set_filament_type(const uint8_t index, const uint8_t type);
 
   static bool unload();
-  static void load_filament(uint8_t);
-  static void load_all();
-  static bool load_filament_to_nozzle(const uint8_t index);
+  static void load_to_feeder(const uint8_t index);
+  static bool load_to_nozzle(const uint8_t index);
   static bool eject_filament(const uint8_t index, const bool recover);
 
 private:
